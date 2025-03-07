@@ -1,9 +1,15 @@
 import subprocess
 import time
 import threading
+import logging
+import signal
+import os
 from flask import Flask, Response
 
 app = Flask(__name__)
+
+# 📝 Configure logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 
 # 📡 List of YouTube Live Streams
 YOUTUBE_STREAMS = {
@@ -20,22 +26,47 @@ YOUTUBE_STREAMS = {
 stream_cache = {}
 cache_lock = threading.Lock()
 
+# 📂 Cookie file path (set via environment variable or default location)
+COOKIE_FILE = os.getenv("YT_COOKIES", "/mnt/data/cookies.txt")
+
 def get_audio_url(youtube_url):
     """Fetch the latest direct audio URL from YouTube."""
-    command = [
-        "yt-dlp",
-        "--cookies", "/mnt/data/cookies.txt",
-        "--force-generic-extractor",
-        "-f", "91",  # Audio format
-        "-g", youtube_url
-    ]
-
     try:
+        # 📝 Get available formats
+        formats_command = [
+            "yt-dlp",
+            "--cookies", COOKIE_FILE,
+            "--force-generic-extractor",
+            "-F", youtube_url
+        ]
+        result = subprocess.run(formats_command, capture_output=True, text=True, check=True)
+        
+        # 🎵 Find the best audio format
+        available_formats = result.stdout
+        if "91" in available_formats:
+            format_code = "91"  # Preferred format
+        else:
+            format_code = "bestaudio"
+
+        # 🔗 Extract the actual audio URL
+        command = [
+            "yt-dlp",
+            "--cookies", COOKIE_FILE,
+            "--force-generic-extractor",
+            "-f", format_code,
+            "-g", youtube_url
+        ]
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         audio_url = result.stdout.strip() if result.stdout else None
+
+        if audio_url:
+            logging.info(f"✅ Fetched audio URL for {youtube_url}")
+        else:
+            logging.warning(f"⚠️ No audio URL found for {youtube_url}")
+
         return audio_url
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Error fetching audio URL: {e}")
+        logging.error(f"❌ Error fetching audio URL: {e}")
         return None
 
 def refresh_stream_url():
@@ -46,56 +77,65 @@ def refresh_stream_url():
                 new_url = get_audio_url(url)
                 if new_url:
                     stream_cache[station] = new_url
+                    logging.info(f"🔄 Updated stream URL for {station}")
         time.sleep(120)  # Refresh every 2 minutes
 
-def generate_stream(youtube_url):
+def generate_stream(station_name):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
     while True:
         with cache_lock:
-            stream_url = stream_cache.get(youtube_url, None)
-        
-        if not stream_url:
-            print("⚠️ No valid stream URL, trying to fetch a new one...")
-            with cache_lock:
-                stream_url = get_audio_url(youtube_url)
-                if stream_url:
-                    stream_cache[youtube_url] = stream_url
+            stream_url = stream_cache.get(station_name, None)
 
         if not stream_url:
-            print("❌ Failed to fetch stream URL")
+            logging.warning(f"⚠️ No valid stream URL for {station_name}, trying to fetch a new one...")
+            with cache_lock:
+                stream_url = get_audio_url(YOUTUBE_STREAMS[station_name])
+                if stream_url:
+                    stream_cache[station_name] = stream_url
+
+        if not stream_url:
+            logging.error(f"❌ Failed to fetch stream URL for {station_name}")
             return
 
         process = subprocess.Popen(
             ["ffmpeg", "-re", "-i", stream_url,
              "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
-             "-buffer_size", "1024k", "-f", "mp3", "-"],
+             "-probesize", "32k", "-f", "mp3", "-"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
 
-        print(f"🎵 Streaming from: {stream_url}")
+        logging.info(f"🎵 Streaming {station_name} from: {stream_url}")
 
         try:
             for chunk in iter(lambda: process.stdout.read(8192), b""):
                 yield chunk
         except GeneratorExit:
+            logging.info(f"🛑 Stopping stream for {station_name}")
             process.kill()
             break
         except Exception as e:
-            print(f"⚠️ Stream error: {e}")
+            logging.error(f"⚠️ Stream error for {station_name}: {e}")
 
-        print("🔄 FFmpeg stopped, retrying...")
+        logging.info(f"🔄 FFmpeg stopped for {station_name}, retrying in 5 seconds...")
         time.sleep(5)
 
 @app.route("/play/<station_name>")
 def stream(station_name):
-    youtube_url = YOUTUBE_STREAMS.get(station_name)
-    if not youtube_url:
+    if station_name not in YOUTUBE_STREAMS:
         return "⚠️ Station not found", 404
 
-    return Response(generate_stream(youtube_url), mimetype="audio/mpeg")
+    return Response(generate_stream(station_name), mimetype="audio/mpeg")
 
 # 🚀 Start the URL refresher thread
 threading.Thread(target=refresh_stream_url, daemon=True).start()
+
+def graceful_shutdown(signum, frame):
+    """Handle shutdown signals gracefully."""
+    logging.info("🛑 Shutting down Flask app...")
+    exit(0)
+
+signal.signal(signal.SIGINT, graceful_shutdown)
+signal.signal(signal.SIGTERM, graceful_shutdown)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
