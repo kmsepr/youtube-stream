@@ -30,7 +30,7 @@ def get_audio_url(youtube_url):
     command = [
     "yt-dlp", "--cookies", "/mnt/data/cookies.txt",
     "--force-generic-extractor",
-    "-f", "bestaudio", "-g", youtube_url
+    "-f", "91", "-g", youtube_url
 ]
 
     try:
@@ -62,8 +62,8 @@ def generate_stream(youtube_url):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
     while True:
         with cache_lock:
-            stream_url = stream_cache.get(youtube_url, None)
-        
+            station_name = next((k for k, v in YOUTUBE_STREAMS.items() if v == youtube_url), None)
+stream_url = stream_cache.get(station_name, None) if station_name besta
         if not stream_url:
             print("⚠️ No valid stream URL, trying to fetch a new one...")
             with cache_lock:
