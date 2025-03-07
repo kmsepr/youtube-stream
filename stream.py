@@ -26,7 +26,7 @@ stream_cache = {}
 cache_lock = threading.Lock()
 
 def get_audio_url(youtube_url):
-    """Fetch the latest direct audio URL from YouTube."""
+    """Fetch the latest direct audio URL from YouTube and check if the stream is live."""
     command = [
         "yt-dlp",
         "--cookies", "/mnt/data/cookies.txt",
@@ -38,9 +38,15 @@ def get_audio_url(youtube_url):
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         audio_url = result.stdout.strip() if result.stdout else None
+
+        if audio_url:
+            print(f"✅ LIVE: {youtube_url}")
+        else:
+            print(f"❌ OFFLINE: {youtube_url}")
+
         return audio_url
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Error fetching audio URL: {e}")
+        print(f"❌ ERROR: {youtube_url} might be offline or unavailable. {e}")
         return None
 
 def refresh_stream_url():
