@@ -65,15 +65,14 @@ def generate_stream(youtube_url):
             station_name = next((k for k, v in YOUTUBE_STREAMS.items() if v == youtube_url), None)
 stream_url = stream_cache.get(station_name, None) if station_name besta
         if not stream_url:
-            print("⚠️ No valid stream URL, trying to fetch a new one...")
-            with cache_lock:
-                stream_url = get_audio_url(youtube_url)
-                if stream_url:
-                    stream_cache[youtube_url] = stream_url
-
-        if not stream_url:
-            print("❌ Failed to fetch stream URL")
-            return
+    print("⚠️ Stream expired. Refreshing...")
+    with cache_lock:
+        stream_url = get_audio_url(youtube_url)
+        if stream_url:
+            stream_cache[youtube_url] = stream_url
+        else:
+            time.sleep(10)
+            continue
 
         process = subprocess.Popen(
     ["ffmpeg", "-re", "-i", stream_url,
