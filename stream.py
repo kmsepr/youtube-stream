@@ -71,11 +71,11 @@ def generate_stream(youtube_url):
             return
 
         process = subprocess.Popen(
-            ["ffmpeg", "-re", "-i", stream_url,
-             "-vn", "-acodec", "libmp3lame", "-b:a", "32k",
-             "-buffer_size", "256k", "-f", "mp3", "-"],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
-        )
+    ["ffmpeg", "-re", "-i", stream_url,
+     "-vn", "-acodec", "libmp3lame", "-ac", "1", "-b:a", "40k",  # Change to 40k or 32k
+     "-buffer_size", "256k", "-f", "mp3", "-"],
+    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
+)
 
         print(f"🎵 Streaming from: {stream_url}")
 
