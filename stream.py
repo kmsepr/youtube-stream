@@ -14,11 +14,11 @@ YOUTUBE_STREAMS = {
     "skicr_tv": "https://www.youtube.com/@SKICRTV/live",
     "yaqeen_institute": "https://www.youtube.com/@yaqeeninstituteofficial/live",
     "bayyinah_tv": "https://www.youtube.com/@bayyinah/live",
-    "eft_guru": "https://www.youtube.com/@EFTGuru-ql8dk/live", 
-    "unacademy_ias": "https://www.youtube.com/@UnacademyIASEnglish/live",   
-    "studyiq_ias": "https://www.youtube.com/@StudyIQEducationLtd/live",  
-    "aljazeera_arabic": "https://www.youtube.com/@aljazeera/live",  
-    "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live"  
+    "eft_guru": "https://www.youtube.com/@EFTGuru-ql8dk/live",
+    "unacademy_ias": "https://www.youtube.com/@UnacademyIASEnglish/live",
+    "studyiq_ias": "https://www.youtube.com/@StudyIQEducationLtd/live",
+    "aljazeera_arabic": "https://www.youtube.com/@aljazeera/live",
+    "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live"
 }
 
 # 🌍 Store the latest audio stream URLs
@@ -28,10 +28,10 @@ cache_lock = threading.Lock()
 def get_audio_url(youtube_url):
     """Fetch the latest direct audio URL from YouTube and check if live."""
     command = [
-    "yt-dlp", "--cookies", "/mnt/data/cookies.txt",
-    "--force-generic-extractor",
-    "-f", "91", "-g", youtube_url
-]
+        "yt-dlp", "--cookies", "/mnt/data/cookies.txt",
+        "--force-generic-extractor",
+        "-f", "bestaudio", "-g", youtube_url
+    ]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
@@ -49,13 +49,17 @@ def get_audio_url(youtube_url):
         return None
 
 def refresh_stream_url():
-    """Refresh YouTube stream URLs every 2 minutes to avoid expiration."""
+    """Refresh YouTube stream URLs every 5 minutes."""
     while True:
+        threads = []
         with cache_lock:
             for station, url in YOUTUBE_STREAMS.items():
-                new_url = get_audio_url(url)
-                if new_url:
-                    stream_cache[station] = new_url
+                thread = threading.Thread(target=lambda: stream_cache.update({station: get_audio_url(url)}))
+                threads.append(thread)
+                thread.start()
+
+            for thread in threads:
+                thread.join()
         time.sleep(300)  # Refresh every 5 minutes
 
 def generate_stream(youtube_url):
@@ -63,23 +67,31 @@ def generate_stream(youtube_url):
     while True:
         with cache_lock:
             station_name = next((k for k, v in YOUTUBE_STREAMS.items() if v == youtube_url), None)
-stream_url = stream_cache.get(station_name, None) if station_name besta
+            stream_url = stream_cache.get(station_name, None) if station_name else None
+
         if not stream_url:
-    print("⚠️ Stream expired. Refreshing...")
-    with cache_lock:
-        stream_url = get_audio_url(youtube_url)
-        if stream_url:
-            stream_cache[youtube_url] = stream_url
-        else:
-            time.sleep(10)
-            continue
+            print("⚠️ Stream expired. Refreshing...")
+            retry_count = 0
+            max_retries = 5
+            while retry_count < max_retries:
+                stream_url = get_audio_url(youtube_url)
+                if stream_url:
+                    with cache_lock:
+                        stream_cache[station_name] = stream_url
+                    break
+                time.sleep(10)
+                retry_count += 1
+            
+            if not stream_url:
+                print("❌ Failed to fetch stream URL after retries")
+                return
 
         process = subprocess.Popen(
-    ["ffmpeg", "-re", "-i", stream_url,
-     "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
-     "-buffer_size", "256k", "-f", "mp3", "-"],
-    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
-)
+            ["ffmpeg", "-re", "-i", stream_url,
+             "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
+             "-buffer_size", "256k", "-f", "mp3", "-"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
+        )
         print(f"🎵 Streaming from: {stream_url}")
 
         try:
