@@ -20,4 +20,4 @@ COPY stream.py /app/stream.py
 EXPOSE 8000
 
 # Run the application
-ENTRYPOINT ["python", "stream.py"]
+CMD ["python", "stream.py"]
