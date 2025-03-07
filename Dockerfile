@@ -1,15 +1,23 @@
-# Use Python base image
+# Use official Python image
 FROM python:3.9
 
-# Install dependencies
-RUN apt-get update && apt-get install -y ffmpeg
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy files
-COPY stream.py /app/stream.py
-COPY requirements.txt /app/requirements.txt
-
+# Set working directory
 WORKDIR /app
 
-# Start script
-CMD ["python3", "stream.py"]
+# Install system dependencies
+RUN apt-get update && apt-get install -y ffmpeg
+
+# Copy requirements first (to leverage Docker cache)
+COPY requirements.txt /app/requirements.txt
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy app source code
+COPY stream.py /app/stream.py
+
+# Expose Flask port (Optional)
+EXPOSE 8000
+
+# Run the application
+ENTRYPOINT ["python3", "stream.py
