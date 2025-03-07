@@ -21,6 +21,10 @@ YOUTUBE_STREAMS = {
     "yaqeen_institute": "https://www.youtube.com/@yaqeeninstituteofficial/live",
     "bayyinah_tv": "https://www.youtube.com/@bayyinah/live",
 "eft_guru": "https://www.youtube.com/@EFTGuru-ql8dk/live",
+"unacademy_ias": "https://www.youtube.com/@UnacademyIASEnglish",
+    "studyiq_ias": "https://www.youtube.com/@StudyIQEducationLtd",
+"aljazeera_arabic": "https://www.youtube.com/@aljazeera",
+"aljazeera_english": "https://www.youtube.com/@aljazeeraenglish",
 }
 
 # 🌍 Store the latest audio stream URLs
