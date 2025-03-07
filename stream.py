@@ -3,7 +3,7 @@ import time
 import threading
 from flask import Flask, Response
 
-app = Flask(__name__)
+app = Flask(name)
 
 # 📡 List of YouTube Live Streams
 YOUTUBE_STREAMS = {
@@ -21,16 +21,18 @@ YOUTUBE_STREAMS = {
     "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live"  
 }
 
-# 🌍 Store latest audio stream URLs
+# 🌍 Store the latest audio stream URLs
 stream_cache = {}
 cache_lock = threading.Lock()
 
 def get_audio_url(youtube_url):
-    """Fetch latest direct audio URL from YouTube and check if live."""
+    """Fetch the latest direct audio URL from YouTube and check if live."""
     command = [
-        "yt-dlp", "--cookies", "/mnt/data/cookies.txt",
-        "--force-generic-extractor", "-f", "bestaudio",
-        "--no-warnings", "--quiet", "-g", youtube_url
+        "yt-dlp",
+        "--cookies", "/mnt/data/cookies.txt",
+        "--force-generic-extractor",
+        "-f", "91",  # Audio format
+        "-g", youtube_url
     ]
 
     try:
@@ -49,7 +51,7 @@ def get_audio_url(youtube_url):
         return None
 
 def refresh_stream_url():
-    """Refresh YouTube stream URLs every 5 minutes to avoid expiration."""
+    """Refresh YouTube stream URLs every 2 minutes to avoid expiration."""
     while True:
         with cache_lock:
             for station, url in YOUTUBE_STREAMS.items():
@@ -62,25 +64,25 @@ def generate_stream(youtube_url):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
     while True:
         with cache_lock:
-            station_name = next((k for k, v in YOUTUBE_STREAMS.items() if v == youtube_url), None)
-            stream_url = stream_cache.get(station_name)
-
+            stream_url = stream_cache.get(youtube_url, None)
+        
         if not stream_url:
-            print(f"⚠️ Stream expired for {station_name}. Refreshing...")
+            print("⚠️ No valid stream URL, trying to fetch a new one...")
             with cache_lock:
                 stream_url = get_audio_url(youtube_url)
                 if stream_url:
-                    stream_cache[station_name] = stream_url
-                else:
-                    time.sleep(10)
-                    continue
+                    stream_cache[youtube_url] = stream_url
+
+        if not stream_url:
+            print("❌ Failed to fetch stream URL")
+            return
 
         process = subprocess.Popen(
-            ["ffmpeg", "-re", "-i", stream_url,
-             "-vn", "-acodec", "aac", "-b:a", "48k",
-             "-buffer_size", "256k", "-threads", "1", "-f", "adts", "-"],
-            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
-        )
+    ["ffmpeg", "-re", "-i", stream_url,
+     "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
+     "-buffer_size", "256k", "-f", "mp3", "-"],
+    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
+)
         print(f"🎵 Streaming from: {stream_url}")
 
         try:
@@ -101,10 +103,10 @@ def stream(station_name):
     if not youtube_url:
         return "⚠️ Station not found", 404
 
-    return Response(generate_stream(youtube_url), mimetype="audio/aac")
+    return Response(generate_stream(youtube_url), mimetype="audio/mpeg")
 
 # 🚀 Start the URL refresher thread
 threading.Thread(target=refresh_stream_url, daemon=True).start()
 
-if __name__ == "__main__":
+if name == "main":
     app.run(host="0.0.0.0", port=8000, debug=True)
