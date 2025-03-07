@@ -3,7 +3,7 @@ import time
 import threading
 from flask import Flask, Response
 
-app = Flask(name)
+app = Flask(__name__)
 
 # 📡 List of YouTube Live Streams
 YOUTUBE_STREAMS = {
@@ -51,38 +51,41 @@ def get_audio_url(youtube_url):
         return None
 
 def refresh_stream_url():
-    """Refresh YouTube stream URLs every 2 minutes to avoid expiration."""
+    """Refresh YouTube stream URLs every 5 minutes to avoid expiration."""
     while True:
         with cache_lock:
             for station, url in YOUTUBE_STREAMS.items():
                 new_url = get_audio_url(url)
                 if new_url:
-                    stream_cache[station] = new_url
+                    stream_cache[station] = new_url  # ✅ FIXED
         time.sleep(300)  # Refresh every 5 minutes
 
-def generate_stream(youtube_url):
+def generate_stream(station_name):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
     while True:
         with cache_lock:
-            stream_url = stream_cache.get(youtube_url, None)
-        
-        if not stream_url:
-            print("⚠️ No valid stream URL, trying to fetch a new one...")
-            with cache_lock:
-                stream_url = get_audio_url(youtube_url)
-                if stream_url:
-                    stream_cache[youtube_url] = stream_url
+            stream_url = stream_cache.get(station_name)
 
         if not stream_url:
-            print("❌ Failed to fetch stream URL")
-            return
+            print(f"⚠️ No valid stream URL for {station_name}, fetching a new one...")
+            with cache_lock:
+                youtube_url = YOUTUBE_STREAMS.get(station_name)
+                if youtube_url:
+                    stream_url = get_audio_url(youtube_url)
+                    if stream_url:
+                        stream_cache[station_name] = stream_url
+
+        if not stream_url:
+            print(f"❌ Failed to fetch stream URL for {station_name}, retrying in 30s...")
+            time.sleep(30)
+            continue  # Retry fetching
 
         process = subprocess.Popen(
-    ["ffmpeg", "-re", "-i", stream_url,
-     "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
-     "-buffer_size", "256k", "-f", "mp3", "-"],
-    stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
-)
+            ["ffmpeg", "-re", "-i", stream_url,
+             "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
+             "-f", "mp3", "-"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
+        )
         print(f"🎵 Streaming from: {stream_url}")
 
         try:
@@ -94,19 +97,19 @@ def generate_stream(youtube_url):
         except Exception as e:
             print(f"⚠️ Stream error: {e}")
 
-        print("🔄 FFmpeg stopped, retrying...")
+        print("🔄 FFmpeg stopped, retrying in 5s...")
+        process.kill()
         time.sleep(5)
 
 @app.route("/play/<station_name>")
 def stream(station_name):
-    youtube_url = YOUTUBE_STREAMS.get(station_name)
-    if not youtube_url:
+    if station_name not in YOUTUBE_STREAMS:
         return "⚠️ Station not found", 404
 
-    return Response(generate_stream(youtube_url), mimetype="audio/mpeg")
+    return Response(generate_stream(station_name), mimetype="audio/mpeg")
 
 # 🚀 Start the URL refresher thread
 threading.Thread(target=refresh_stream_url, daemon=True).start()
 
-if name == "main":
+if __name__ == "__main__":  # ✅ FIXED
     app.run(host="0.0.0.0", port=8000, debug=True)
