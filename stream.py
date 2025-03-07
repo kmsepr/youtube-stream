@@ -20,6 +20,7 @@ YOUTUBE_STREAMS = {
     "skicr_tv": "https://www.youtube.com/@SKICRTV/live",
     "yaqeen_institute": "https://www.youtube.com/@yaqeeninstituteofficial/live",
     "bayyinah_tv": "https://www.youtube.com/@bayyinah/live",
+"eft_guru": "https://www.youtube.com/@EFTGuru-ql8dk/live",
 }
 
 # 🌍 Store the latest audio stream URLs
