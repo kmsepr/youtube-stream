@@ -28,12 +28,10 @@ cache_lock = threading.Lock()
 def get_audio_url(youtube_url):
     """Fetch the latest direct audio URL from YouTube and check if live."""
     command = [
-        "yt-dlp",
-        "--cookies", "/mnt/data/cookies.txt",
-        "--force-generic-extractor",
-        "-f", "91",  # Audio format
-        "-g", youtube_url
-    ]
+    "yt-dlp", "--cookies", "/mnt/data/cookies.txt",
+    "--force-generic-extractor",
+    "-f", "bestaudio", "-g", youtube_url
+]
 
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
