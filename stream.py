@@ -17,7 +17,7 @@ YOUTUBE_STREAMS = {
     "eft_guru": "https://www.youtube.com/@EFTGuru-ql8dk/live", 
     "unacademy_ias": "https://www.youtube.com/@UnacademyIASEnglish/live",   
     "studyiq_ias": "https://www.youtube.com/@StudyIQEducationLtd/live",  
-    "aljazeera_arabic": "https://www.youtube.com/@AlJazeeraArabic/live",  
+    "aljazeera_arabic": "https://www.youtube.com/@aljazeera/live",  
     "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live"  
 }
 
