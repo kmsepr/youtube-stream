@@ -99,12 +99,12 @@ def generate_stream(station_name):
 
         process = subprocess.Popen(
             ["ffmpeg", "-re", "-i", stream_url,
-             "-vn", "-acodec", "libmp3lame", "-b:a", "64k",
+             "-vn", "-ac", "1", "-acodec", "libmp3lame", "-b:a", "40k",
              "-probesize", "32k", "-f", "mp3", "-"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
 
-        logging.info(f"🎵 Streaming {station_name} from: {stream_url}")
+        logging.info(f"🎵 Streaming {station_name} from: {stream_url} (Mono, 40kbps)")
 
         try:
             for chunk in iter(lambda: process.stdout.read(8192), b""):
