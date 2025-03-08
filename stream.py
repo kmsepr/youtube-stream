@@ -21,7 +21,10 @@ YOUTUBE_STREAMS = {
     "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live",
     "entri_degree": "https://www.youtube.com/@EntriDegreeLevelExams/live",
     "xylem_psc": "https://www.youtube.com/@XylemPSC/live",
-    "xylem_sslc": "https://www.youtube.com/@XylemSSLC2023/live"
+    "xylem_sslc": "https://www.youtube.com/@XylemSSLC2023/live",
+    "entri_app": "https://www.youtube.com/@entriapp/live",
+    "entri_ias": "https://www.youtube.com/@EntriIAS/live"
+
     
 }
 
