@@ -20,7 +20,8 @@ YOUTUBE_STREAMS = {
     "aljazeera_arabic": "https://www.youtube.com/@aljazeera/live",  
     "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live",
     "entri_degree": "https://www.youtube.com/@EntriDegreeLevelExams/live",
-    "xylem_psc": "https://www.youtube.com/@XylemSSLC2023/live"
+    "xylem_psc": "https://www.youtube.com/@XylemPSC/live",
+    "xylem_sslc": "https://www.youtube.com/@XylemSSLC2023/live"
     
 }
 
