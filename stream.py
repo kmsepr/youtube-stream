@@ -18,7 +18,10 @@ YOUTUBE_STREAMS = {
     "unacademy_ias": "https://www.youtube.com/@UnacademyIASEnglish/live",   
     "studyiq_ias": "https://www.youtube.com/@StudyIQEducationLtd/live",  
     "aljazeera_arabic": "https://www.youtube.com/@aljazeera/live",  
-    "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live"  
+    "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live",
+    "entri_degree": "https://www.youtube.com/@EntriDegreeLevelExams/live",
+    "xylem_psc": "https://www.youtube.com/@XylemSSLC2023/live"
+    
 }
 
 # 🌍 Store the latest audio stream URLs
@@ -58,7 +61,7 @@ def refresh_stream_url():
                 new_url = get_audio_url(url)
                 if new_url:
                     stream_cache[station] = new_url  # ✅ FIXED
-        time.sleep(1800)  # Refresh every 60 minutes
+        time.sleep(3600)  # Refresh every 60 minutes
 
 def generate_stream(station_name):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
