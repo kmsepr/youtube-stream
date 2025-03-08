@@ -58,7 +58,7 @@ def refresh_stream_url():
                 new_url = get_audio_url(url)
                 if new_url:
                     stream_cache[station] = new_url  # ✅ FIXED
-        time.sleep(3600)  # Refresh every 60 minutes
+        time.sleep(1800)  # Refresh every 60 minutes
 
 def generate_stream(station_name):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
