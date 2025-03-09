@@ -25,53 +25,71 @@ YOUTUBE_STREAMS = {
     "entri_app": "https://www.youtube.com/@entriapp/live",
     "entri_ias": "https://www.youtube.com/@EntriIAS/live",
     "studyiq_english": "https://www.youtube.com/@studyiqiasenglish/live"
-
-    
 }
 
 # 🌍 Store the latest audio stream URLs
 stream_cache = {}
 cache_lock = threading.Lock()
+failed_stations = set()  # Tracks stations that failed to get a stream URL
 
 def get_audio_url(youtube_url):
     """Fetch the latest direct audio URL from YouTube and check if live."""
     command = [
         "yt-dlp",
-        "--no-check-certificate",  # Added this option
+        "--no-check-certificate",
         "--cookies", "/mnt/data/cookies.txt",
         "--force-generic-extractor",
-        "-f", "91",  # Audio format
+        "-f", "91",
         "-g", youtube_url
     ]
 
     try:
-        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        result = subprocess.run(command, capture_output=True, text=True, timeout=15)  # ✅ Added timeout
         audio_url = result.stdout.strip() if result.stdout else None
 
         if audio_url:
             print(f"✅ LIVE: {youtube_url}")
+            return audio_url
         else:
             print(f"❌ OFFLINE: {youtube_url}")
+            return None
 
-        return audio_url
-
+    except subprocess.TimeoutExpired:
+        print(f"⚠️ yt-dlp timeout for {youtube_url}, skipping...")
     except subprocess.CalledProcessError as e:
-        print(f"⚠️ Error fetching audio URL for {youtube_url}: {e}")
-        return None
+        print(f"⚠️ yt-dlp error for {youtube_url}: {e}")
+    except Exception as e:
+        print(f"⚠️ Unexpected error fetching audio URL for {youtube_url}: {e}")
+
+    return None
 
 def refresh_stream_url():
-    """Refresh YouTube stream URLs every 5 minutes to avoid expiration."""
+    """Refresh YouTube stream URLs every 60 minutes, retrying failed ones every 2 hours."""
+    global failed_stations
+
     while True:
         with cache_lock:
             for station, url in YOUTUBE_STREAMS.items():
+                if station in failed_stations:
+                    continue  # Skip recently failed stations
+
                 new_url = get_audio_url(url)
                 if new_url:
-                    stream_cache[station] = new_url  # ✅ FIXED
-        time.sleep(3600)  # Refresh every 60 minutes
+                    stream_cache[station] = new_url
+                    if station in failed_stations:
+                        failed_stations.remove(station)  # ✅ Remove from failed list
+                else:
+                    failed_stations.add(station)  # ❌ Mark as failed
 
-def generate_stream(station_name):
+        retry_time = 3600 if not failed_stations else 7200  # ✅ Retry failed ones in 2 hours
+        print(f"🔄 Next refresh in {retry_time // 60} minutes.")
+        time.sleep(retry_time)
+
+def generate_stream(station_name, max_retries=5):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
-    while True:
+    retries = 0
+
+    while retries < max_retries:
         with cache_lock:
             stream_url = stream_cache.get(station_name)
 
@@ -85,8 +103,9 @@ def generate_stream(station_name):
                         stream_cache[station_name] = stream_url
 
         if not stream_url:
-            print(f"❌ Failed to fetch stream URL for {station_name}, retrying in 30s...")
-            time.sleep(30)
+            retries += 1
+            print(f"❌ Failed to fetch stream URL for {station_name}, retrying in {retries * 30}s ({retries}/{max_retries})...")
+            time.sleep(retries * 30)
             continue  # Retry fetching
 
         process = subprocess.Popen(
@@ -110,6 +129,8 @@ def generate_stream(station_name):
         process.kill()
         time.sleep(5)
 
+    print(f"❌ Max retries reached for {station_name}. Stopping.")
+
 @app.route("/play/<station_name>")
 def stream(station_name):
     if station_name not in YOUTUBE_STREAMS:
@@ -120,5 +141,5 @@ def stream(station_name):
 # 🚀 Start the URL refresher thread
 threading.Thread(target=refresh_stream_url, daemon=True).start()
 
-if __name__ == "__main__":  # ✅ FIXED
+if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)
