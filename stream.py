@@ -57,17 +57,66 @@ def get_audio_url(youtube_url):
         return None
 
 def refresh_stream_url():
-    """Refresh YouTube stream URLs every 5 minutes to avoid expiration."""
+    """Refresh YouTube stream URLs every 30 minutes to avoid expiration."""
     while True:
         with cache_lock:
             for station, url in YOUTUBE_STREAMS.items():
                 new_url = get_audio_url(url)
                 if new_url:
                     stream_cache[station] = new_url  # ✅ FIXED
-        time.sleep(1800)  # Refresh every 5 minutes
+        time.sleep(1800)  # Refresh every 30 minutes
 
 def generate_stream(station_name):
     """Streams audio using FFmpeg, automatically updating the URL when it expires."""
     while True:
         with cache_lock:
-    
+            stream_url = stream_cache.get(station_name)
+
+        if not stream_url:
+            print(f"⚠️ No valid stream URL for {station_name}, fetching a new one...")
+            with cache_lock:
+                youtube_url = YOUTUBE_STREAMS.get(station_name)
+                if youtube_url:
+                    stream_url = get_audio_url(youtube_url)
+                    if stream_url:
+                        stream_cache[station_name] = stream_url
+
+        if not stream_url:
+            print(f"❌ Failed to fetch stream URL for {station_name}, retrying in 30s...")
+            time.sleep(30)
+            continue  # Retry fetching
+
+        print(f"🎵 Streaming from: {stream_url}")
+
+        process = subprocess.Popen(
+            ["ffmpeg", "-re", "-i", stream_url,
+             "-vn", "-acodec", "libmp3lame", "-b:a", "64k", "-ac", "2",  # 64 kbps, stereo
+             "-f", "mp3", "-"],
+            stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
+        )
+
+        try:
+            for chunk in iter(lambda: process.stdout.read(8192), b""):
+                yield chunk
+        except GeneratorExit:
+            process.kill()
+            break
+        except Exception as e:
+            print(f"⚠️ Stream error: {e}")
+
+        print("🔄 FFmpeg stopped, retrying in 5s...")
+        process.kill()
+        time.sleep(5)
+
+@app.route("/play/<station_name>")
+def stream(station_name):
+    if station_name not in YOUTUBE_STREAMS:
+        return "⚠️ Station not found", 404
+
+    return Response(generate_stream(station_name), mimetype="audio/mpeg")
+
+# 🚀 Start the URL refresher thread
+threading.Thread(target=refresh_stream_url, daemon=True).start()
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=8000, debug=True)
