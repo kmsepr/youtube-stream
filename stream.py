@@ -33,14 +33,14 @@ cache_lock = threading.Lock()
 
 def get_audio_url(youtube_url):
     """Fetch the latest direct audio URL from YouTube and check if live."""
-    command = [
-        "yt-dlp",
-        "--cookies", "/mnt/data/cookies.txt",
-        "--force-generic-extractor",
-        "-f", "91",  # Audio format
-        "-g", youtube_url
-    ]
-
+   command = [
+    "yt-dlp",
+    "--no-check-certificate",  # Ignore SSL errors
+    "--cookies", "/mnt/data/cookies.txt",
+    "--force-generic-extractor",
+    "-f", "91",
+    "-g", youtube_url
+]
     try:
         result = subprocess.run(command, capture_output=True, text=True, check=True)
         audio_url = result.stdout.strip() if result.stdout else None
@@ -89,9 +89,9 @@ def generate_stream(station_name):
         print(f"🎵 Streaming from: {stream_url}")
 
         process = subprocess.Popen(
-            ["ffmpeg", "-re", "-i", stream_url,
-             "-vn", "-acodec", "libmp3lame", "-b:a", "64k", "-ac", "2",  # 64 kbps, stereo
-             "-f", "mp3", "-"],
+           ["ffmpeg", "-re", "-i", stream_url,
+ "-vn", "-acodec", "libmp3lame", "-b:a", "40k", "-ac", "1",
+ "-f", "mp3", "-"]
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
 
