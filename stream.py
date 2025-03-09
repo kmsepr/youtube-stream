@@ -16,14 +16,15 @@ YOUTUBE_STREAMS = {
     "bayyinah_tv": "https://www.youtube.com/@bayyinah/live",
     "eft_guru": "https://www.youtube.com/@EFTGuru-ql8dk/live", 
     "unacademy_ias": "https://www.youtube.com/@UnacademyIASEnglish/live",   
-    "studyiq_ias": "https://www.youtube.com/@StudyIQEducationLtd/live",  
+    "studyiq_hindi": "https://www.youtube.com/@StudyIQEducationLtd/live",  
     "aljazeera_arabic": "https://www.youtube.com/@aljazeera/live",  
     "aljazeera_english": "https://www.youtube.com/@AlJazeeraEnglish/live",
     "entri_degree": "https://www.youtube.com/@EntriDegreeLevelExams/live",
     "xylem_psc": "https://www.youtube.com/@XylemPSC/live",
     "xylem_sslc": "https://www.youtube.com/@XylemSSLC2023/live",
     "entri_app": "https://www.youtube.com/@entriapp/live",
-    "entri_ias": "https://www.youtube.com/@EntriIAS/live"
+    "entri_ias": "https://www.youtube.com/@EntriIAS/live",
+    "studyiq_english": "https://www.youtube.com/@studyiqiasenglish/live"
 
     
 }
