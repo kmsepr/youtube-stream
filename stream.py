@@ -29,6 +29,7 @@ def get_audio_url(youtube_url):
     """Fetch the latest direct audio URL from YouTube and check if live."""
     command = [
         "yt-dlp",
+        "--no-check-certificate",
         "--cookies", "/mnt/data/cookies.txt",
         "--force-generic-extractor",
         "-f", "91",  # Audio format
