@@ -85,13 +85,13 @@ def generate_stream(station_name):
             print(f"❌ Failed to fetch stream URL for {station_name}, retrying in 30s...")
             time.sleep(30)
             continue  # Retry fetching
-
-        process = subprocess.Popen(
+process = subprocess.Popen(
     ["ffmpeg", "-re", "-i", stream_url,
-     "-vn", "-acodec", "libmp3lame", "-b:a", "40k", "-ac", "1",  # 40 kbps, mono
+     "-vn", "-acodec", "libmp3lame", "-b:a", "64k", "-ac", "2",  # 64 kbps, stereo
      "-f", "mp3", "-"],
     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
 )
+
         print(f"🎵 Streaming from: {stream_url}")
 
         try:
