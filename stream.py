@@ -91,7 +91,6 @@ process = subprocess.Popen(
      "-f", "mp3", "-"],
     stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
 )
-
         print(f"🎵 Streaming from: {stream_url}")
 
         try:
