@@ -89,7 +89,7 @@ def generate_stream(station_name):
 
         process = subprocess.Popen(
             ["ffmpeg", "-re", "-i", stream_url,
-             "-vn", "-acodec", "libmp3lame", "-b:a", "40k", "-ac", "1",
+             "-vn", "-acodec", "libmp3lame", "-b:a", "16k", "-ac", "1",
              "-f", "mp3", "-"],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
