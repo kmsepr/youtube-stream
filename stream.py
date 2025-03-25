@@ -37,7 +37,7 @@ def get_audio_url(youtube_url):
         "yt-dlp",
         "--cookies", "/mnt/data/cookies.txt",
         "--force-generic-extractor",
-        "-f", "bestaudio[ext=webm]/bestaudio",  # Get best available audio format
+        "-f", "91",  # Get best available audio format
         "-g", youtube_url
     ]
     try:
