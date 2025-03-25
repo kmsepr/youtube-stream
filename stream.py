@@ -37,7 +37,7 @@ def get_audio_url(youtube_url):
         "yt-dlp",
         "--cookies", "/mnt/data/cookies.txt",
         "--force-generic-extractor",
-        "-f", "91",
+        "-f", "bestaudio[ext=webm]/bestaudio",  # Get best available audio format
         "-g", youtube_url
     ]
     try:
@@ -62,7 +62,7 @@ def refresh_stream_url():
             for station, url in YOUTUBE_STREAMS.items():
                 new_url = get_audio_url(url)
                 if new_url:
-                    stream_cache[station] = new_url  # ✅ FIXED
+                    stream_cache[station] = new_url
         time.sleep(1800)  # Refresh every 30 minutes
 
 def generate_stream(station_name):
@@ -88,17 +88,26 @@ def generate_stream(station_name):
         print(f"🎵 Streaming from: {stream_url}")
 
         process = subprocess.Popen(
-                        [
+            [
                 "ffmpeg", "-reconnect", "1", "-reconnect_streamed", "1",
-                "-reconnect_delay_max", "10", "-fflags", "nobuffer", "-flags", "low_delay",
-                "-i", stream_url, "-vn", "-ac", "1", "-b:a", "40k", "-buffer_size", "1024k", "-f", "mp3", "-"
+                "-reconnect_delay_max", "5", "-reconnect_at_eof", "1",
+                "-fflags", "nobuffer", "-flags", "low_delay",
+                "-probesize", "32M", "-analyzeduration", "30M",
+                "-i", stream_url, "-vn", "-ac", "1", "-ar", "44100",
+                "-b:a", "40k", "-buffer_size", "1024k", "-f", "mp3", "-"
             ],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
 
+        start_time = time.time()  # Track when streaming starts
+
         try:
             for chunk in iter(lambda: process.stdout.read(8192), b""):
                 yield chunk
+                if time.time() - start_time > 60:  # Refresh URL every 60 seconds
+                    print("🔄 Refreshing stream URL...")
+                    process.kill()
+                    break  # Exit loop to get a fresh URL
         except GeneratorExit:
             process.kill()
             break
@@ -106,7 +115,6 @@ def generate_stream(station_name):
             print(f"⚠️ Stream error: {e}")
 
         print("🔄 FFmpeg stopped, retrying in 5s...")
-        process.kill()
         time.sleep(5)
 
 @app.route("/play/<station_name>")
