@@ -91,7 +91,7 @@ def generate_stream(station_name):
                         [
                 "ffmpeg", "-reconnect", "1", "-reconnect_streamed", "1",
                 "-reconnect_delay_max", "10", "-fflags", "nobuffer", "-flags", "low_delay",
-                "-i", stream_url, "-vn", "-ac", "1", "-b:a", "40k", "-buffer_size", "1024k", "-f", "mp3", "-"
+                "-i", stream_url, "-vn", "-ac", "1", "-b:a", "40k", "-buffer_size", "256k", "-f", "mp3", "-"
             ],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
