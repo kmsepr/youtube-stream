@@ -89,12 +89,9 @@ def generate_stream(station_name):
 
         process = subprocess.Popen(
             [
-                "ffmpeg", "-reconnect", "1", "-reconnect_streamed", "1",
-                "-reconnect_delay_max", "5", "-reconnect_at_eof", "1",
-                "-fflags", "nobuffer", "-flags", "low_delay",
-                "-probesize", "32M", "-analyzeduration", "30M",
-                "-i", stream_url, "-vn", "-ac", "1", "-ar", "44100",
-                "-b:a", "40k", "-buffer_size", "1024k", "-f", "mp3", "-"
+                "ffmpeg", "-re", "-i", stream_url,
+                "-vn", "-acodec", "libmp3lame", "-b:a", "40k", "-ac", "1",
+                "-f", "mp3", "-"
             ],
             stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, bufsize=8192
         )
